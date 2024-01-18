@@ -24,7 +24,7 @@ from . import tfutil
 from .. import util
 
 from .tfutil import TfExpression, TfExpressionEx
-
+tf.compat.v1.disable_eager_execution()
 # pylint: disable=protected-access
 # pylint: disable=attribute-defined-outside-init
 # pylint: disable=too-many-public-methods
@@ -85,12 +85,12 @@ class Network:
         assert isinstance(build_module_src, str)
 
         # Choose TensorFlow name scope.
-        with tf.name_scope(None):
-            scope = tf.get_default_graph().unique_name(name, mark_as_used=True)
+        with tf.compat.v1.name_scope(None):
+            scope = tf.compat.v1.get_default_graph().unique_name(name, mark_as_used=True)
 
         # Query current TensorFlow device.
-        with tfutil.absolute_name_scope(scope), tf.control_dependencies(None):
-            device = tf.no_op(name="_QueryDevice").device
+        with tfutil.absolute_name_scope(scope), tf.compat.v1.control_dependencies(None):
+            device = tf.compat.v1.no_op(name="_QueryDevice").device
 
         # Immutable state.
         self._name                  = name
@@ -137,15 +137,15 @@ class Network:
         build_kwargs["components"] = self._components
 
         # Override scope and device, and ignore surrounding control dependencies.
-        with tfutil.absolute_variable_scope(self.scope, reuse=False), tfutil.absolute_name_scope(self.scope), tf.device(self.device), tf.control_dependencies(None):
-            assert tf.get_variable_scope().name == self.scope
-            assert tf.get_default_graph().get_name_scope() == self.scope
+        with tfutil.absolute_variable_scope(self.scope, reuse=False), tfutil.absolute_name_scope(self.scope), tf.device(self.device), tf.compat.v1.control_dependencies(None):
+            assert tf.compat.v1.get_variable_scope().name == self.scope
+            assert tf.compat.v1.get_default_graph().get_name_scope() == self.scope
 
             # Create input templates.
             self._input_templates = []
             for param in inspect.signature(self._build_func).parameters.values():
                 if param.kind == param.POSITIONAL_OR_KEYWORD and param.default is param.empty:
-                    self._input_templates.append(tf.placeholder(tf.float32, name=param.name))
+                    self._input_templates.append(tf.compat.v1.placeholder(tf.float32, name=param.name))
 
             # Call build func.
             out_expr = self._build_func(*self._input_templates, **build_kwargs)
@@ -357,7 +357,7 @@ class Network:
 
         # Build TensorFlow graph to evaluate the network.
         with tfutil.absolute_variable_scope(self.scope, reuse=True), tf.name_scope(self.name):
-            assert tf.get_variable_scope().name == self.scope
+            assert tf.compat.v1.get_variable_scope().name == self.scope
             valid_inputs = [expr for expr in in_expr if expr is not None]
             final_inputs = []
             for expr, name, shape in zip(in_expr, self.input_names, self.input_shapes):
@@ -643,7 +643,7 @@ class Network:
         _ = self.output_templates  # ensure that the template graph has been created
         include_prefix = self.scope + "/"
         exclude_prefix = include_prefix + "_"
-        ops = tf.get_default_graph().get_operations()
+        ops = tf.compat.v1.get_default_graph().get_operations()
         ops = [op for op in ops if op.name.startswith(include_prefix)]
         ops = [op for op in ops if not op.name.startswith(exclude_prefix)]
         return ops

@@ -131,8 +131,8 @@ def GetS(dataset_name,num_img):
     tmp='./npy/'+dataset_name+'/W.npy'
     dlatents=np.load(tmp)[:num_img]
     
-    with tf.Session() as sess:
-        init = tf.global_variables_initializer()
+    with tf.compat.v1.Session() as sess:
+        init = tf.compat.v1.global_variables_initializer()
         sess.run(init)
         
         Gs=LoadModel(dataset_name)
